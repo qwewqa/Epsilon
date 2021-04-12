@@ -221,21 +221,15 @@ async def on_message(message):
     ctx = await bot.get_context(message)
 
     if isinstance(ctx.channel, discord.TextChannel):
-        document = await db.servers.find_one({"server_id": ctx.guild.id})
 
         if ctx.author.bot is False:
             if ctx.prefix:
                 log.info(f"{ctx.message.author.id}/{ctx.message.author.name}{ctx.message.author.discriminator}: {ctx.message.content}")
-            else:
-                if document['fun']:
-                    post = {'server_id': ctx.guild.id,
-                            'channel_id': ctx.channel.id,
-                            'msg_id': ctx.message.id}
-                    await db.msgid.insert_one(post)
-
-            if ctx.message.reference and document['fun']:
+                await bot.invoke(ctx)
+            elif ctx.message.reference:
                 ref_message = await ctx.message.channel.fetch_message(ctx.message.reference.message_id)
                 if ref_message.author == bot.user:
+                    document = await db.servers.find_one({"server_id": ctx.guild.id})
                     #modmail logic
                     if ctx.channel.id == document['modmail_channel']:
                         if ref_message.embeds[0].title == 'New Modmail':
@@ -243,26 +237,31 @@ async def on_message(message):
                             user_id = ref_embed.text
                             user = await bot.fetch_user(user_id)
                             if document['modmail_channel']:
-                                embed = gen_embed(name = f'{ctx.author.name}#{ctx.author.discriminator}', icon_url = ctx.author.avatar_url, title = "New Modmail", content = message.clean_content)
+                                embed = gen_embed(name = f'{ctx.author.name}#{ctx.author.discriminator}', icon_url = ctx.author.avatar_url, title = "New Modmail", content = f'{message.clean_content}\n\nYou may reply to this modmail using the reply function.')
                                 embed.set_footer(text = f"{ctx.guild.id}")
                                 dm_channel = user.dm_channel
                                 if user.dm_channel is None:
                                     dm_channel = await user.create_dm()
                                 await dm_channel.send(embed = embed)
                                 await ctx.send(embed = gen_embed(title = 'Modmail sent', content = f'Sent modmail to {user.name}#{user.discriminator}.'))
-                    else:
+                    elif document['fun']:
                         log.info("Found a reply to me, generating response...")
                         msg = await get_msgid(ctx.message)
                         log.info(f"Message retrieved: {msg}\n")
                         await ctx.message.reply(content = msg)
-
             elif bot.user.id in ctx.message.raw_mentions and ctx.author != bot.user:
                 log.info("Found a mention of myself, generating response...")
                 msg = await get_msgid(ctx.message)
                 log.info(f"Message retrieved: {msg}\n")
                 await ctx.message.reply(content = msg)
-
-            await bot.invoke(ctx)
+            else:
+                document = await db.servers.find_one({"server_id": ctx.guild.id})
+                if document['fun']:
+                    post = {'server_id': ctx.guild.id,
+                            'channel_id': ctx.channel.id,
+                            'msg_id': ctx.message.id}
+                    await db.msgid.insert_one(post)
+            
 
     elif isinstance(ctx.channel, discord.DMChannel):
         if ctx.author.bot is False:

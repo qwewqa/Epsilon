@@ -156,7 +156,7 @@ class Administration(commands.Cog):
                 await ctx.send(embed = gen_embed(title = 'channelconfig', content = f'Enabled logging in channel {channel_id.mention} for {ctx.guild.name}'))
             elif channel_option == "welcome":
                 await db.servers.update_one({"server_id": ctx.guild.id}, {"$set": {'welcome_channel': channel_id.id}})
-                await ctx.send(embed = gen_embed(title = 'channelconfig', content = f'Enabled logging in channel {channel_id.mention} for {ctx.guild.name}'))
+                await ctx.send(embed = gen_embed(title = 'channelconfig', content = f'Enabled welcomes in channel {channel_id.mention} for {ctx.guild.name}'))
             elif channel_option == "modmail":
                 await db.servers.update_one({"server_id": ctx.guild.id}, {"$set": {'modmail_channel': channel_id.id}})
                 await ctx.send(embed = gen_embed(title = 'channelconfig', content = f'Enabled modmail in channel {channel_id.mention} for {ctx.guild.name}'))
@@ -405,9 +405,9 @@ class Administration(commands.Cog):
                 m = await modmail_enabled()
                 dm_embed = None
                 if m:
-                    dm_embed = gen_embed(name = ctx.guild.name, icon_url = ctx.guild.icon_url, title=f'You have been muted for {seconds} seconds', content = f'Reason: {reason}\n\nIf you have any issues, you may reply (use the reply function) to this message and send a modmail.')
+                    dm_embed = gen_embed(name = ctx.guild.name, icon_url = ctx.guild.icon_url, title=f'You have been muted.', content = f'Reason: {reason}\n\nIf you have any issues, you may reply (use the reply function) to this message and send a modmail.')
                 else:
-                    dm_embed = gen_embed(name = ctx.guild.name, icon_url = ctx.guild.icon_url, title=f'You have been muted for {seconds} seconds', content = f'Reason: {reason}')
+                    dm_embed = gen_embed(name = ctx.guild.name, icon_url = ctx.guild.icon_url, title=f'You have been muted.', content = f'Reason: {reason}')
                 dm_embed.set_footer(text = time.ctime())
                 await dm_channel.send(embed = dm_embed)
                 muted = muted + f'{member.mention} '
@@ -493,7 +493,7 @@ class Administration(commands.Cog):
 
     @commands.command(name = 'strike',
                     description = 'Strike a user. After a certain number of strikes, the user is automatically banned. Default is 3, can be changed using severconfig',
-                    help = 'Usage\n\n\%warn [user mentions/user ids/user name + discriminator (ex: name#0000)] <reason>')
+                    help = 'Usage\n\n\%strike [user mentions/user ids/user name + discriminator (ex: name#0000)] [message_link] <reason>')
     @commands.check_any(commands.has_guild_permissions(ban_members = True), has_modrole())
     async def strike(self, ctx, members: commands.Greedy[discord.Member], message_link: str, *, reason):
         async def modmail_enabled():
