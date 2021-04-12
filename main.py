@@ -339,7 +339,7 @@ async def on_member_remove(member):
         name = member.name
         strip_name = re.sub('discord\.gg\/\w{7,}', '[removed]', name)
         channel = member.guild.get_channel(farewellchannel)
-        await channel.send(content = f'Farewell {strip_name}! (ID: {member.id}')
+        await channel.send(content = f'Farewell {strip_name}! (ID: {member.id})')
 
 ###################
 
