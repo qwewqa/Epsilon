@@ -312,7 +312,7 @@ async def on_member_join(member):
         else:
             log.error("Auto-assign role does not exist!")
     if document['welcome_channel']:
-        welcome_channel = discord.utils.find(lambda c: c.id == int(document['welcome_channel'], member.guild.text_channels))
+        welcome_channel = discord.utils.find(lambda c: c.id == int(document['welcome_channel']), member.guild.text_channels)
         welcomebanners = ["https://files.s-neon.xyz/share/welcomebanner-ps4.png", "https://files.s-neon.xyz/share/welcomebanner.png", "https://files.s-neon.xyz/share/welcomebanner-ritorin.png"]
         if document['rules_channel']:
             ruleschannel = int(document['rules_channel'])
