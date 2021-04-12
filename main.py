@@ -126,10 +126,9 @@ async def _initialize_document(guild, id):
             'autorole': None,
             'log_channel': None,
             'welcome_channel': None,
-            'welcome_message': f"Welcome to the {guild.name}!",
-            'welcome_banner': None,
             'max_strike': 3,
             'modmail_channel': None,
+            'rules_channel': None,
             'fun': False,
             'prefix': None,
             }
@@ -290,7 +289,7 @@ async def on_message(message):
 @bot.event
 async def on_guild_join(guild):
     await _check_document(guild, guild.id)
-    
+
     status = discord.Game(f'{default_prefix}help | {len(bot.guilds)} servers')
     await bot.change_presence(activity = status)
 
@@ -313,15 +312,35 @@ async def on_member_join(member):
             log.info("Auto-assigned role to new member in {}".format(member.guild.name))
         else:
             log.error("Auto-assign role does not exist!")
-    if document['welcome_message'] and document['welcome_channel']:
+    if document['welcome_channel']:
         welcome_channel = find(lambda c: c.id == int(document['welcome_channel'], member.guild.text_channels))
-        embed = gen_embed(name=f"{member.name}#{member.discriminator}",
-                        icon_url= member.avatar_url, 
-                        title=f"Welcome to {member.guild.name}", 
-                        content=document['welcome_message'])
-        if document['welcome_banner']:
-            embed.set_image(document['welcome_banner'])
-        await welcome_channel.send(embed = embed)
+        welcomebanners = ["https://files.s-neon.xyz/share/welcomebanner-ps4.png", "https://files.s-neon.xyz/share/welcomebanner.png", "https://files.s-neon.xyz/share/welcomebanner-ritorin.png"]
+        if document['rules_channel']:
+            ruleschannel = int(document['rules_channel'])
+            #TODO: replace with a embed
+            content = discord.Embed(colour=0x1abc9c, title="Istariana vilseriol!", description=f"Welcome {member.name} to the {member.guild.name} Discord server. Please read our <#{ruleschannel}>, thank you.")
+            content.set_author(name=f"{member.name}", icon_url=member.avatar_url)
+            content.set_footer(text="ALICE IN DISSONANCE | {}".format(time.ctime()))
+            content.set_thumbnail(url="https://files.s-neon.xyz/share/big-icon-512.png")
+            content.set_image(url=random.choice(welcomebanners))
+            await welcome_channel.send(embed = content)
+         else:
+            content = discord.Embed(colour=0x1abc9c, title="Istariana vilseriol!", description=f"Welcome {member.name} to the {member.guild.name} Discord server.")
+            content.set_author(name=f"{member.name}", icon_url=member.avatar_url)
+            content.set_footer(text="ALICE IN DISSONANCE | {}".format(time.ctime()))
+            content.set_thumbnail(url="https://files.s-neon.xyz/share/big-icon-512.png")
+            content.set_image(url=random.choice(welcomebanners))
+            await welcome_channel.send(embed = content)
+
+@bot.event
+async def on_member_remove(member):
+    document = await db.servers.find_one({"server_id": member.guild.id})
+    if document['log_channel']:
+        farewellchannel = int(document['log_channel'])
+        name = member.name
+        strip_name = re.sub('discord\.gg\/\w{7,}', '[removed]', name)
+        channel = member.guild.get_channel(farewellchannel)
+        await channel.send(content = f'Farewell {strip_name}! (ID: {member.id}')
 
 ###################
 

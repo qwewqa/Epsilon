@@ -116,12 +116,13 @@ class Administration(commands.Cog):
 
     @commands.command(name = 'channelconfig',
                     description = 'Set channel for logs and welcome messages.',
-                    help = 'Usage\n\n\%channelconfig [log/welcome/modmail] [channel id/channel mention] OR [disable] to turn off')
+                    help = 'Usage\n\n\%channelconfig [log/welcome/modmail/rules] [channel id/channel mention] OR [disable] to turn off')
     @commands.check_any(commands.has_guild_permissions(manage_guild = True), has_modrole())
     async def channelconfig(self, ctx, channel_option: str, channel_id: Union[discord.TextChannel, str]):
-        valid_options = {'log', 'welcome', 'modmail'}
+        valid_options = {'log', 'welcome', 'modmail', 'rules'}
         channel_option = channel_option.lower()
         if channel_option not in valid_options:
+            log.warning('Error: Invalid Input')
             params = ' '.join([x for x in valid_options])
             await ctx.send(embed = gen_embed(title = 'Input Error', content = f'That is not a valid option for this parameter. Valid options: <{params}>'))
             return
@@ -139,6 +140,9 @@ class Administration(commands.Cog):
                 elif channel_option == "modmail":
                     await db.servers.update_one({"server_id": ctx.guild.id}, {"$set": {'modmail_channel': None}})
                     await ctx.send(embed = gen_embed(title = 'channelconfig', content = f'Disabled modmail for {ctx.guild.name}'))
+                elif channel_option == "rules":
+                    await db.servers.update_one({"server_id": ctx.guild.id}, {"$set": {'rules_channel': None}})
+                    await ctx.send(embed = gen_embed(title = 'channelconfig', content = f'Disabled rules channel for {ctx.guild.name}'))
 
             elif not discord.utils.find(lambda c: c.id == channel_id, ctx.guild.text_channels):
                 log.warning("Error: Channel Not Found")
@@ -156,8 +160,11 @@ class Administration(commands.Cog):
             elif channel_option == "modmail":
                 await db.servers.update_one({"server_id": ctx.guild.id}, {"$set": {'modmail_channel': channel_id.id}})
                 await ctx.send(embed = gen_embed(title = 'channelconfig', content = f'Enabled modmail in channel {channel_id.mention} for {ctx.guild.name}'))
-
-    @commands.command(name = 'welcomeconfig',
+            elif channel_option == "rules":
+                await db.servers.update_one({"server_id": ctx.guild.id}, {"$set": {'rules_channel': channel_id.id}})
+                await ctx.send(embed = gen_embed(title = 'channelconfig', content = f'Set rules channel as {channel_id.mention} for {ctx.guild.name}'))
+    
+    '''@commands.command(name = 'welcomeconfig',
                     description = 'Set the welcome message and optional banner.',
                     help = 'Usage\n\n\%welcomeconfig "[message]" <url>')
     @commands.check_any(commands.has_guild_permissions(manage_guild = True), has_modrole())
@@ -173,7 +180,7 @@ class Administration(commands.Cog):
                 await ctx.send(embed = gen_embed(title = 'Input Error', content = "Invalid URL. Check the formatting (https:// prefix is required)"))
         else:
             await db.servers.update_one({"server_id": ctx.guild.id}, {"$set": {'welcome_message': welcome_message}})
-            await ctx.send(embed = gen_embed(title = 'welcomeconfig', content = f"Welcome message set for {ctx.guild.name}: {welcome_message}"))
+            await ctx.send(embed = gen_embed(title = 'welcomeconfig', content = f"Welcome message set for {ctx.guild.name}: {welcome_message}"))'''
 
     @commands.command(name = 'serverconfig',
                     description = 'Set various server config settings.',
