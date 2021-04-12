@@ -324,7 +324,7 @@ async def on_member_join(member):
             content.set_thumbnail(url="https://files.s-neon.xyz/share/big-icon-512.png")
             content.set_image(url=random.choice(welcomebanners))
             await welcome_channel.send(embed = content)
-         else:
+        else:
             content = discord.Embed(colour=0x1abc9c, title="Istariana vilseriol!", description=f"Welcome {member.name} to the {member.guild.name} Discord server.")
             content.set_author(name=f"{member.name}", icon_url=member.avatar_url)
             content.set_footer(text="ALICE IN DISSONANCE | {}".format(time.ctime()))
