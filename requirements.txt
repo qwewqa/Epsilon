@@ -5,5 +5,5 @@ motor
 pymongo
 psutil
 validators
-python-dateutil
 dnspython
+python-dateutil

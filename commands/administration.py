@@ -237,9 +237,13 @@ class Administration(commands.Cog):
         async def delete_messages(limit = None, check = None, before = None, after = None):
             deleted = await ctx.channel.purge(limit = limit, check = check, before = before, after = after)
             if check:
-                await ctx.send(embed = gen_embed(title = 'purge', content = f'The last {len(deleted)} messages by {member.name}#{member.discriminator} were deleted.'))
+                sent = await ctx.send(embed = gen_embed(title = 'purge', content = f'The last {len(deleted)} messages by {member.name}#{member.discriminator} were deleted.'))
+                await ctx.message.delete()
+                await sent.delete(delay = 5)
             else:
-                await ctx.send(embed = gen_embed(title = 'purge', content = f'The last {len(deleted)} messages were deleted.'))
+                sent = await ctx.send(embed = gen_embed(title = 'purge', content = f'The last {len(deleted)} messages were deleted.'))
+                await ctx.message.delete()
+                await sent.delete(delay = 5)
 
         time = time or ctx.message.reference
         
@@ -251,6 +255,7 @@ class Administration(commands.Cog):
                     if num < 0:
                         log.warning("Error: Invalid input")
                         await ctx.send(embed = gen_embed(title = 'Input Error', content = 'That is not a valid option for this parameter. Please pick a number > 0.'))
+                        
                     else:
                         if time:
                             after_value = datetime.datetime.utcnow()
@@ -274,7 +279,9 @@ class Administration(commands.Cog):
         elif num:
             if num < 0:
                 log.warning("Error: Invalid input")
-                await ctx.send(embed = gen_embed(title = 'Input Error', content = 'That is not a valid option for this parameter. Please pick a number > 0.'))
+                sent = await ctx.send(embed = gen_embed(title = 'Input Error', content = 'That is not a valid option for this parameter. Please pick a number > 0.'))
+                await ctx.message.delete()
+                await sent.delete(delay = 5)
             else:
                 if time:
                     after_value = datetime.datetime.utcnow()
@@ -302,7 +309,9 @@ class Administration(commands.Cog):
             log.warning("Missing Required Argument")
             traceback.print_exception(type(error), error, error.__traceback__, limit = 0)
             params = ' '.join([x for x in ctx.command.clean_params])
-            await ctx.send(embed = gen_embed(title = "Invalid parameter(s) entered", content = f"Parameter order: {params}\n\nDetailed parameter usage can be found by typing {ctx.prefix}help {ctx.command.name}```"))
+            sent = await ctx.send(embed = gen_embed(title = "Invalid parameter(s) entered", content = f"Parameter order: {params}\n\nDetailed parameter usage can be found by typing {ctx.prefix}help {ctx.command.name}```"))
+            await ctx.message.delete()
+            await sent.delete(delay = 5)
 
     @commands.command(name = 'addrole',
                     description = 'Creates a new role. You can also specify members to add to the role when it is created.',
@@ -357,7 +366,7 @@ class Administration(commands.Cog):
                     description = 'Mute user(s) for a certain amount of time.',
                     help = 'Usage\n\n\%mute [user mentions/user ids/user name + discriminator (ex: name#0000)] <time> <reason>')
     @commands.check_any(commands.has_guild_permissions(mute_members = True), has_modrole())
-    async def mute(self, ctx, members: commands.Greedy[discord.Member], time: Optional[str] = None, *, reason: Optional[str]):
+    async def mute(self, ctx, members: commands.Greedy[discord.Member], mtime: Optional[str] = None, *, reason: Optional[str]):
         def convert_to_seconds(s):
             return int(timedelta(**{
                 UNITS.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
@@ -387,8 +396,8 @@ class Administration(commands.Cog):
             if member.dm_channel is None:
                 dm_channel = await member.create_dm()
 
-            if time:
-                seconds = convert_to_seconds(time)
+            if mtime:
+                seconds = convert_to_seconds(mtime)
                 m = await modmail_enabled()
                 dm_embed = None
                 if m:
@@ -401,6 +410,7 @@ class Administration(commands.Cog):
 
                 await asyncio.sleep(seconds)
                 await member.remove_roles(mutedRole)
+                return
             else:
                 m = await modmail_enabled()
                 dm_embed = None
@@ -419,6 +429,8 @@ class Administration(commands.Cog):
                     help = 'Usage\n\n ^unmute [user mentions/user ids/user name + discriminator (ex: name#0000)]')
     @commands.check_any(commands.has_guild_permissions(mute_members = True), has_modrole())
     async def unmute(self, ctx, members: commands.Greedy[discord.Member]):
+        mutedRole = discord.utils.get(ctx.guild.roles, name="Muted")
+
         unmuted = ""
         for member in members:
             await member.remove_roles(mutedRole)
@@ -444,9 +456,6 @@ class Administration(commands.Cog):
             if member.dm_channel is None:
                 dm_channel = await member.create_dm()
 
-            await ctx.guild.kick(member, reason = reason)
-            kicked = kicked + f'{member.name}#{member.discriminator} '
-
             m = await modmail_enabled()
             dm_embed = None
             if m:
@@ -455,6 +464,9 @@ class Administration(commands.Cog):
                 dm_embed = gen_embed(name = ctx.guild.name, icon_url = ctx.guild.icon_url, title='You have been kicked', content = f'Reason: {reason}')
             dm_embed.set_footer(text = time.ctime())
             await dm_channel.send(embed = dm_embed)
+
+            await ctx.guild.kick(member, reason = reason)
+            kicked = kicked + f'{member.name}#{member.discriminator} '
 
         await ctx.send(embed = gen_embed(title = 'kick', content = f'{kicked}has been kicked.\nReason: {reason}'))
 
@@ -472,9 +484,6 @@ class Administration(commands.Cog):
 
         banned = ""
         for user in users:
-            await ctx.guild.ban(user, reason = reason)
-            banned = banned + f'{member.name}#{member.discriminator} '
-
             if ctx.guild.get_member(user.id):
                 dm_channel = member.dm_channel
                 if member.dm_channel is None:
@@ -488,6 +497,9 @@ class Administration(commands.Cog):
                     dm_embed = gen_embed(name = ctx.guild.name, icon_url = ctx.guild.icon_url, title='You have been banned', content = f'Reason: {reason}')
                 dm_embed.set_footer(text = time.ctime())
                 await dm_channel.send(embed = dm_embed)
+
+            await ctx.guild.ban(user, reason = reason)
+            banned = banned + f'{member.name}#{member.discriminator} '
 
         await ctx.send(embed = gen_embed(title = 'ban', content = f'{banned}has been kicked.\nReason: {reason}'))
 
