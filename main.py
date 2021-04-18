@@ -9,6 +9,7 @@ import random
 
 import psutil
 import time
+import datetime
 
 import discord
 import colorlog
@@ -17,6 +18,7 @@ import motor.motor_asyncio
 from discord.ext import commands
 from discord.utils import find, get
 from pymongo import MongoClient
+from datetime import timedelta
 
 from formatting.constants import VERSION as BOTVERSION
 from formatting.constants import NAME
@@ -335,6 +337,24 @@ async def on_member_join(member):
             content.set_thumbnail(url="https://files.s-neon.xyz/share/big-icon-512.png")
             content.set_image(url=random.choice(welcomebanners))
             await welcome_channel.send(embed = content)
+
+@bot.event
+async def on_member_update(before, after):
+    patreon = before.guild.get_role(201966886861275137)
+    guild = after.guild
+    if patreon:
+        if not patreon in after.roles:
+            # To prevent search through the entire audit log, limit to 1 minute in the past
+            async for entry in guild.audit_logs(action=discord.AuditLogAction.member_role_update, user=bot.get_user(216303189073461248), after=(datetime.datetime.now() - datetime.timedelta(minutes=1))):
+                if entry.target == before:
+                    try:
+                        await after.add_roles(patreon, reason="Auto-reassignment of patron role") 
+
+                    except discord.Forbidden:
+                        raise exceptions.CommandError("I don't have permission to modify a user's roles.")
+
+                    except discord.HTTPException:
+                        raise exceptions.CommandError("Something happened while attempting to add role.")
 
 @bot.event
 async def on_member_remove(member):
